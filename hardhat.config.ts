@@ -14,7 +14,6 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 100,
           },
-          viaIR: false, // Truning to true kills the chainlink functions :/
           evmVersion: "cancun",
         },
       },
