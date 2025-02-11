@@ -9,6 +9,8 @@ import "./ReadStrongRef.sol";
 using ReadCbor for bytes;
 using ReadStrongRef for bytes;
 
+import "hardhat/console.sol";
+
 // Subparser for embed in `post` object
 library ReadEmbed {
     function readSimpleRef(
@@ -99,7 +101,6 @@ library ReadEmbed {
             } else if (mapKey == "aspectRatio") {
                 (byteIdx, , ) = readEmbedImageAspectRatio(cborData, byteIdx);
             } else {
-                console.log("unexpected record key in image");
                 revert("unexpected record key in image");
             }
         }
@@ -119,6 +120,7 @@ library ReadEmbed {
 
         for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
             (byteIdx, mapKey, ) = cborData.String32(byteIdx, 6);
+            console.log("embed key: %s ");
             if (mapKey == "$type") {
                 (byteIdx, , ) = cborData.String32(byteIdx, 21);
                 // TODO: act differently based on type...
