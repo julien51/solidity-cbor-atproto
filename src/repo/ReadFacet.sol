@@ -33,9 +33,11 @@ library ReadFacet {
                 (byteIdx, , ) = cborData.String32(byteIdx, 32);
                 // Got a did!
             } else if (mapKey == "tag") {
-                // Got a tag!
+                // skip tag
+                byteIdx = cborData.skipString(byteIdx);
             } else if (mapKey == "uri") {
-                // Got a uri!
+                // skip uri!
+                byteIdx = cborData.skipString(byteIdx);
             } else {
                 revert("unexpected record key in facet feature");
             }

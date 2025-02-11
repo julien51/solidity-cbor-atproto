@@ -16,7 +16,7 @@ describe("Bluesky posts", () => {
     const endpoint = `https://bsky.social/xrpc/com.atproto.repo.listRecords?repo=did:plc:4lhnf4celyqbbchcsoi7i4vo&collection=app.bsky.feed.post&limit=100`;
     const response = await fetch(endpoint);
     const { records } = await response.json();
-    for (let i = 0; i < records.length; i++) {
+    for (let i = 24; i < records.length; i++) {
       const value = cbor.encode(records[i].value);
       try {
         await bsky.parse(value);

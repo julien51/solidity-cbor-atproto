@@ -37,9 +37,7 @@ library ReadEmbed {
             mapLen == 2,
             "expected exactly 2 required fields in image aspect ratio"
         );
-
         bytes32 mapKey;
-
         for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
             (byteIdx, mapKey, ) = cborData.String32(byteIdx, 6);
             if (mapKey == "width") {
@@ -107,32 +105,90 @@ library ReadEmbed {
         return byteIdx;
     }
 
+    function readEmbedExternal(
+        bytes memory cborData,
+        uint32 byteIdx
+    ) internal pure returns (uint32) {
+        uint32 mapLen;
+        (byteIdx, mapLen) = cborData.Map(byteIdx);
+        bytes32 mapKey;
+
+        for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
+            (byteIdx, mapKey, ) = cborData.String32(byteIdx, 11);
+            if (mapKey == "uri") {
+                // skip uri
+                byteIdx = cborData.skipString(byteIdx);
+            } else if (mapKey == "thumb") {
+                // thumbs are images!
+                byteIdx = readEmbedImageImage(cborData, byteIdx);
+            } else if (mapKey == "title") {
+                // Skip title
+                byteIdx = cborData.skipString(byteIdx);
+            } else if (mapKey == "description") {
+                // Skip description
+                byteIdx = cborData.skipString(byteIdx);
+            } else {
+                revert("unexpected record key in external");
+            }
+        }
+        return byteIdx;
+    }
+
+    function readEmbedMedia(
+        bytes memory cborData,
+        uint32 byteIdx
+    ) internal pure returns (uint32) {
+        uint32 mapLen;
+        (byteIdx, mapLen) = cborData.Map(byteIdx);
+        bytes32 mapKey;
+
+        for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
+            (byteIdx, mapKey, ) = cborData.String32(byteIdx, 8);
+            if (mapKey == "$type") {
+                bytes32 stype;
+                (byteIdx, stype, ) = cborData.String32(byteIdx, 30);
+                // TODO: act differently based on type...
+            } else if (mapKey == "images") {
+                // We have an array of images!
+                uint imagesLength;
+                (byteIdx, imagesLength) = cborData.Array(byteIdx);
+                for (uint j = 0; j < imagesLength; j++) {
+                    byteIdx = readEmbedImage(cborData, byteIdx);
+                }
+            }
+        }
+        return byteIdx;
+    }
+
     function readEmbed(
         bytes memory cborData,
         uint32 byteIdx
     ) internal pure returns (uint32) {
         uint32 mapLen;
         (byteIdx, mapLen) = cborData.Map(byteIdx);
-
-        require(mapLen == 2, "expected 2 required fields in embed");
+        require(mapLen == 2 || mapLen == 3, "expected 2 or 3 fields in embed");
 
         bytes32 mapKey;
 
         for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
-            (byteIdx, mapKey, ) = cborData.String32(byteIdx, 6);
-            console.log("embed key: %s ");
+            (byteIdx, mapKey, ) = cborData.String32(byteIdx, 8);
             if (mapKey == "$type") {
-                (byteIdx, , ) = cborData.String32(byteIdx, 21);
+                bytes32 stype;
+                (byteIdx, stype, ) = cborData.String32(byteIdx, 30);
                 // TODO: act differently based on type...
             } else if (mapKey == "images") {
                 // We have an array of images!
-                uint facetsLength;
-                (byteIdx, facetsLength) = cborData.Array(byteIdx);
-                for (uint j = 0; j < facetsLength; j++) {
+                uint imagesLength;
+                (byteIdx, imagesLength) = cborData.Array(byteIdx);
+                for (uint j = 0; j < imagesLength; j++) {
                     byteIdx = readEmbedImage(cborData, byteIdx);
                 }
             } else if (mapKey == "record") {
                 (byteIdx, ) = cborData.readStrongRef(byteIdx);
+            } else if (mapKey == "external") {
+                byteIdx = readEmbedExternal(cborData, byteIdx);
+            } else if (mapKey == "media") {
+                byteIdx = readEmbedMedia(cborData, byteIdx);
             } else {
                 revert("unexpected record key in embed");
             }
