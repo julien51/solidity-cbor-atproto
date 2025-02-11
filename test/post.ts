@@ -22,7 +22,7 @@ describe("Bluesky posts", () => {
         await bsky.parse(value);
       } catch (error) {
         console.error(
-          `Failed to parse record ${records[i].uri} with value:`,
+          `Failed to parse record ${i}: ${records[i].uri} with value:`,
           JSON.stringify(records[i].value, null, 2)
         );
         throw error;

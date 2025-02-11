@@ -34,7 +34,7 @@ library ReadStrongRef {
             } else if (mapKey == "uri") {
                 (byteIdx, uri) = cborData.String(byteIdx);
             } else {
-                revert("unexpected record keyaaa2");
+                revert("unexpected record key in strongRef");
             }
         }
 
