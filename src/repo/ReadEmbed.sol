@@ -134,6 +134,27 @@ library ReadEmbed {
         return byteIdx;
     }
 
+    function readEmbedRecord(
+        bytes memory cborData,
+        uint32 byteIdx
+    ) internal pure returns (uint32) {
+        uint32 mapLen;
+        (byteIdx, mapLen) = cborData.Map(byteIdx);
+        bytes32 mapKey;
+
+        for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
+            (byteIdx, mapKey, ) = cborData.String32(byteIdx, 11);
+            if (mapKey == "$type") {
+                byteIdx = cborData.skipString(byteIdx);
+            } else if (mapKey == "record") {
+                (byteIdx, ) = cborData.readStrongRef(byteIdx);
+            } else {
+                revert("unexpected record key in external");
+            }
+        }
+        return byteIdx;
+    }
+
     function readEmbedMedia(
         bytes memory cborData,
         uint32 byteIdx
@@ -170,12 +191,12 @@ library ReadEmbed {
 
         bytes32 mapKey;
 
+        string memory stype;
         for (uint mapIdx = 0; mapIdx < mapLen; mapIdx++) {
             (byteIdx, mapKey, ) = cborData.String32(byteIdx, 8);
             if (mapKey == "$type") {
-                bytes32 stype;
-                (byteIdx, stype, ) = cborData.String32(byteIdx, 30);
-                // TODO: act differently based on type...
+                (byteIdx, stype) = cborData.String(byteIdx);
+                // TODO: check that stype matches mapKeys
             } else if (mapKey == "images") {
                 // We have an array of images!
                 uint imagesLength;
@@ -184,7 +205,14 @@ library ReadEmbed {
                     byteIdx = readEmbedImage(cborData, byteIdx);
                 }
             } else if (mapKey == "record") {
-                (byteIdx, ) = cborData.readStrongRef(byteIdx);
+                if (
+                    keccak256(bytes(stype)) ==
+                    keccak256(bytes("app.bsky.embed.record"))
+                ) {
+                    (byteIdx, ) = cborData.readStrongRef(byteIdx);
+                } else {
+                    byteIdx = readEmbedRecord(cborData, byteIdx);
+                }
             } else if (mapKey == "external") {
                 byteIdx = readEmbedExternal(cborData, byteIdx);
             } else if (mapKey == "media") {
